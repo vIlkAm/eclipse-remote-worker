@@ -1,0 +1,53 @@
+name: image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - entrypoint.sh
+      - .github/workflows/image.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: ghcr.io/vilkam/eclipse-remote-worker
+      VERSION: 0.1.0
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sign in to the registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Refuse to replace a published version
+        run: |
+          if docker manifest inspect "$IMAGE:$VERSION" >/dev/null 2>&1; then
+            echo "::error::$IMAGE:$VERSION is already published. Raise VERSION instead of replacing it."
+            exit 1
+          fi
+      - name: Build
+        run: |
+          docker build \
+            --build-arg WORKER_VERSION="$VERSION" \
+            --label org.opencontainers.image.source="https://github.com/${{ github.repository }}" \
+            --label org.opencontainers.image.description="Eclipse render worker" \
+            -t "$IMAGE:$VERSION" -t "$IMAGE:latest" .
+      - name: Check the tools the studio expects
+        run: |
+          docker run --rm --entrypoint sh "$IMAGE:$VERSION" -c '
+            set -e
+            ffmpeg -hide_banner -version | head -1
+            ffmpeg -hide_banner -encoders 2>/dev/null | grep -q " libx264 "
+            ffmpeg -hide_banner -encoders 2>/dev/null | grep -q " h264_nvenc "
+            python3 -c "import PIL, cv2, numpy; assert PIL.__version__ == \"11.1.0\"; print(PIL.__version__, cv2.__version__, numpy.__version__)"
+            proot --version | head -1; rsync --version | head -1
+            cat /etc/eclipse-worker-image'
+      - name: Publish
+        run: |
+          docker push "$IMAGE:$VERSION"
+          docker push "$IMAGE:latest"
+          docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE:$VERSION" >> "$GITHUB_STEP_SUMMARY"

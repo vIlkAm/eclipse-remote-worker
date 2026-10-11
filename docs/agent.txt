@@ -1,0 +1,111 @@
+ECLIPSE RENDER WORKER: INSTRUCTIONS FOR AN AI AGENT
+====================================================
+
+You are on a machine whose owner agreed to lend it to an Eclipse studio for
+video rendering. Your task is to start one container and report two values.
+The person talking to you is the machine's owner. Ask them before anything
+that this file does not list.
+
+You need one thing from them: the studio key. It is a single line that starts
+with "ssh-ed25519 ". It is a public key and is safe to show. If you do not
+have it, ask for it and stop.
+
+IMAGE
+  ghcr.io/vilkam/eclipse-remote-worker:0.1.0
+  Public, no sign-in needed. Source: https://github.com/vIlkAm/eclipse-remote-worker
+
+WHAT THE CONTAINER IS
+  An SSH door that accepts exactly that one key, plus ffmpeg and Python
+  picture libraries. The studio connects in, copies files into the
+  container's /workspace folder and runs render programs inside the
+  container. It has no access to the machine's files outside its volume.
+
+DO NOT
+  - Do not change router, firewall, port-forwarding or DNS settings.
+  - Do not publish the port on a public address unless the owner says the
+    machine is a server with a public address and asks for that route.
+  - Do not use --privileged, --network host, or mount any host folder.
+  - Do not install anything except Docker, the NVIDIA container toolkit and
+    Tailscale, and ask the owner before each of those.
+  - Do not sign in to Tailscale or share the machine yourself. The owner does
+    that in their own browser.
+  - Do not create, read or send any private key, password or token.
+  - Do not put the studio key into a shared template or a public file.
+
+STEP 1. CHECK WHAT IS THERE
+  docker version
+  nvidia-smi                    (a card and its driver; skip if there is none)
+  tailscale ip -4               (the Tailscale address, if Tailscale is used)
+  Report anything missing to the owner and ask before installing it.
+  Windows: Docker Desktop must use the WSL 2 engine. Run commands in PowerShell.
+
+STEP 2. CHECK DOCKER CAN SEE THE CARD (skip without a card)
+  docker run --rm --gpus all --entrypoint nvidia-smi ghcr.io/vilkam/eclipse-remote-worker:0.1.0
+  If this fails on Linux, the NVIDIA container toolkit is missing. Tell the
+  owner. If they prefer, continue without "--gpus all": the machine then
+  lends processor cores only.
+
+STEP 3. CHOOSE THE ADDRESS THE PORT LISTENS ON
+  a) Tailscale (default for a home PC or any machine behind a router):
+     BIND = the output of "tailscale ip -4"
+     The owner must share this machine with the studio's Tailscale account
+     (Tailscale admin page, Machines, Share). Remind them.
+  b) A server with a public address, only if the owner asks for it:
+     BIND = 0.0.0.0, and the owner must allow port 2222 from the studio's
+     address only, in the hosting provider's firewall. Docker's published
+     ports bypass ufw, so a ufw rule alone is not enough. Say so.
+
+STEP 4. START THE WORKER
+  Linux and macOS shells:
+    docker run -d --name eclipse-worker --restart unless-stopped --gpus all \
+      -p "BIND:2222:22" -v eclipse-worker:/workspace \
+      -e ECLIPSE_WORKER_KEY="THE STUDIO KEY LINE" \
+      ghcr.io/vilkam/eclipse-remote-worker:0.1.0
+
+  Windows PowerShell (one line):
+    docker run -d --name eclipse-worker --restart unless-stopped --gpus all -p "BIND:2222:22" -v eclipse-worker:/workspace -e "ECLIPSE_WORKER_KEY=THE STUDIO KEY LINE" ghcr.io/vilkam/eclipse-remote-worker:0.1.0
+
+  Replace BIND and the key. Leave out "--gpus all" if there is no card.
+  If a container named eclipse-worker already exists, ask the owner before
+  replacing it.
+
+STEP 5. CHECK IT
+  docker ps --filter name=eclipse-worker        must show it as Up
+  docker logs eclipse-worker                    must contain a line like
+      eclipse-worker: host key SHA256:....
+  If the container keeps restarting and the log says "set
+  ECLIPSE_WORKER_KEY to the ssh-ed25519 public key you were given", the key
+  was pasted wrongly. Remove the container (docker rm -f eclipse-worker) and
+  repeat step 4.
+  With Tailscale, confirm the port does not answer on the machine's ordinary
+  network address:
+    Linux:    nc -z -w 3 THE-LAN-ADDRESS 2222 ; echo $?       (must not print 0)
+    Windows:  Test-NetConnection THE-LAN-ADDRESS -Port 2222   (TcpTestSucceeded must be False)
+
+STEP 6. REPORT BACK
+  Give the owner exactly these, to send to the studio:
+    1. Address and port, for example 100.64.0.12:2222
+    2. The full host key line from the log, "SHA256:..." included
+    3. Whether a card is present, and its name from nvidia-smi
+  Nothing else is needed. Do not send logs, keys or other details.
+
+RUNPOD INSTEAD OF A MACHINE YOU ARE ON
+  A RunPod pod is itself the container, so there is no docker command.
+  Create a GPU pod with:
+    image                 ghcr.io/vilkam/eclipse-remote-worker:0.1.0
+    exposed TCP ports     22            (TCP, not HTTP)
+    volume mount path     /workspace    (20 GB)
+    environment variable  ECLIPSE_WORKER_KEY = the studio key line
+    start command         empty
+  Pick a card with a video encoder (RTX series, L4, L40S). A100 and H100 have
+  none. Set the key on the pod itself, not in a saved template.
+  Report the pod's direct TCP address for port 22 (public IP and outside
+  port) and the host key line from the pod's log. The outside port changes
+  when the pod restarts.
+
+REMOVING IT
+  docker rm -f eclipse-worker
+  docker volume rm eclipse-worker
+  docker rmi ghcr.io/vilkam/eclipse-remote-worker:0.1.0
+  RunPod: terminate the pod. A stopped pod keeps its storage.
+  Tailscale: the owner removes the share in the Tailscale admin page.

@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eclipse render worker</title>
+<meta name="description" content="Lend a machine with a graphics card to an Eclipse studio for rendering. One container, one key, nothing else opened.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c0b0a;--panel:#161412;--panel-2:#1d1a16;--line:#211e1a;--line-2:#322d26;
+  --ink:#f5efe4;--ink-2:#cbc2b3;--muted:#80776a;
+  --accent:#f2b84b;--accent-hi:#f8cf72;--accent-text:#f5c666;--on-accent:#1a1205;--accent-soft:#f2b84b1c;--accent-line:#f2b84b55;
+  --ok:#9bc37a;--warn:#e0a45c;--warn-soft:#e0a45c1f;--field:#12100e;--glow:#f2b84bb3;--halo:#f2b84b40;
+}
+@media (prefers-color-scheme: light){
+  :root{
+    --bg:#faf7f0;--panel:#fffdf8;--panel-2:#f5efe2;--line:#e9e1d1;--line-2:#d8cdb8;
+    --ink:#17140f;--ink-2:#4b4437;--muted:#8d8371;
+    --accent:#efae2e;--accent-hi:#f5bd4b;--accent-text:#8a5c05;--on-accent:#1a1205;--accent-soft:#f2b84b33;--accent-line:#c98f1780;
+    --ok:#5a9a4a;--warn:#a8691a;--warn-soft:#e0a45c2e;--field:#fffdf8;--glow:#f2b84be6;--halo:#f2b84b80;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+main{max-width:820px;margin:0 auto;padding:56px 22px 96px}
+h1,h2{font-family:"Instrument Serif",Georgia,serif;font-weight:400;letter-spacing:.005em;margin:0}
+h1{font-size:clamp(40px,7vw,60px);line-height:1.05}
+h2{font-size:32px;margin-top:64px;padding-top:8px}
+h3{font-size:17px;margin:28px 0 6px}
+p{margin:10px 0;color:var(--ink-2)}
+a{color:var(--accent-text)}
+strong{color:var(--ink)}
+.hero{display:flex;gap:26px;align-items:center;margin-bottom:22px}
+.mark{flex:none;width:76px;height:76px;border-radius:50%;background:var(--bg);
+  box-shadow:0 0 0 2px var(--accent-hi),0 0 26px 6px var(--glow),0 0 70px 22px var(--halo)}
+.lead{font-size:19px;color:var(--ink-2);max-width:640px}
+nav{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 0}
+nav a{text-decoration:none;color:var(--ink-2);border:1px solid var(--line-2);border-radius:999px;padding:6px 14px;font-size:14px}
+nav a:hover{border-color:var(--accent-line);color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:18px 0}
+.note{background:var(--warn-soft);border:1px solid var(--line-2);border-radius:12px;padding:12px 16px;margin:16px 0;color:var(--ink-2)}
+ol,ul{padding-left:22px;color:var(--ink-2)}
+li{margin:7px 0}
+code,pre,textarea,input{font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+code{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--ink)}
+.block{position:relative;margin:12px 0}
+pre{margin:0;background:var(--field);border:1px solid var(--line-2);border-radius:12px;padding:14px 16px;overflow-x:auto;color:var(--ink);white-space:pre}
+pre.wrap{white-space:pre-wrap;word-break:break-word}
+.copy{position:absolute;top:8px;right:8px;background:var(--panel-2);color:var(--ink-2);border:1px solid var(--line-2);border-radius:8px;padding:4px 10px;font:12px ui-sans-serif,system-ui,sans-serif;cursor:pointer}
+.copy:hover{color:var(--ink);border-color:var(--accent-line)}
+.copy.done{color:var(--ok)}
+label{display:block;font-weight:600;margin-bottom:6px}
+textarea{width:100%;min-height:74px;resize:vertical;background:var(--field);color:var(--ink);border:1px solid var(--line-2);border-radius:12px;padding:12px 14px}
+textarea:focus{outline:2px solid var(--accent-line);outline-offset:1px}
+.hint{font-size:14px;color:var(--muted);margin-top:6px}
+.hint.ok{color:var(--ok)} .hint.bad{color:var(--warn)}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:15px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink-2)}
+th{color:var(--muted);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.05em}
+td:first-child{color:var(--ink);white-space:nowrap}
+footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--line);font-size:14px;color:var(--muted)}
+@media (max-width:560px){.hero{flex-direction:column;align-items:flex-start}td:first-child{white-space:normal}}
+</style>
+</head>
+<body>
+<main>
+
+<div class="hero">
+  <div class="mark" aria-hidden="true"></div>
+  <div>
+    <h1>Eclipse render worker</h1>
+  </div>
+</div>
+<p class="lead">Lend a machine with a graphics card to an Eclipse studio. It runs one small container. The studio connects to it with one key, sends a render job, and takes the finished video back.</p>
+
+<nav>
+  <a href="#key">1. The key</a>
+  <a href="#runpod">RunPod</a>
+  <a href="#linux">Linux server</a>
+  <a href="#windows">Windows PC</a>
+  <a href="#back">What to send back</a>
+  <a href="#agent">Let an AI agent do it</a>
+  <a href="#remove">Remove it</a>
+</nav>
+
+<div class="card">
+  <p><strong>What it opens on your machine:</strong> one port, answered by a door that accepts a single key. No password works, and it does not forward connections to anything else.</p>
+  <p><strong>What the key allows:</strong> the studio can copy files into the container and run programs inside it. That is how a render job works. Treat it as lending the studio that container, with your card and as much processor as Docker gives it.</p>
+  <p><strong>What it cannot do:</strong> see or change files on your machine outside its own storage folder. The container does have normal internet access, like any other container.</p>
+  <p><strong>Which way the connection goes:</strong> the studio calls your machine. The worker starts no connection of its own.</p>
+</div>
+
+<h2 id="key">1. The key from the studio</h2>
+<p>The studio sends you one line that starts with <code>ssh-ed25519</code>. It is a public key, so it is safe to send in a chat. Paste it here and every command on this page fills in. Nothing you type leaves this page.</p>
+<label for="keyfield">Studio key</label>
+<textarea id="keyfield" spellcheck="false" autocomplete="off" placeholder="ssh-ed25519 AAAA… eclipse-studio"></textarea>
+<div class="hint" id="keyhint">Not pasted yet. The commands below show a placeholder.</div>
+
+<h2 id="runpod">RunPod</h2>
+<ol>
+  <li>Deploy a GPU pod. Pick a card that has a video encoder, for example an RTX 4090, RTX A5000, L4 or L40S. The A100 and H100 have no video encoder.</li>
+  <li>Use these settings for the pod:
+    <table>
+      <tr><th>Setting</th><th>Value</th></tr>
+      <tr><td>Container image</td><td><code class="image">ghcr.io/vilkam/eclipse-remote-worker:0.1.0</code></td></tr>
+      <tr><td>Expose TCP ports</td><td><code>22</code> (TCP, not HTTP)</td></tr>
+      <tr><td>Expose HTTP ports</td><td>leave empty</td></tr>
+      <tr><td>Start command</td><td>leave empty</td></tr>
+      <tr><td>Volume mount path</td><td><code>/workspace</code>, 20 GB is enough</td></tr>
+      <tr><td>Environment variable</td><td><code>ECLIPSE_WORKER_KEY</code> = the studio key</td></tr>
+    </table>
+  </li>
+  <li>Set the key when you create the pod. Do not save it into a shared template.</li>
+  <li>When the pod runs, open its <strong>Logs</strong> and find the line <code>eclipse-worker: host key SHA256:…</code>.</li>
+  <li>Open <strong>Connect</strong> and read the address under <strong>Direct TCP ports</strong>, the one that leads to port 22. It looks like <code>203.0.113.7:41822</code>.</li>
+  <li><a href="#back">Send both to the studio.</a></li>
+</ol>
+<div class="note">The outside port changes when a pod restarts, so send the new address again after a restart. When you are done, <strong>terminate</strong> the pod. A stopped pod keeps its storage, with any footage still on it, and keeps costing money for that storage.</div>
+
+<h2 id="linux">Linux server</h2>
+<p>You need Docker and, for a card, the NVIDIA driver with the NVIDIA container toolkit. This checks that Docker can see the card:</p>
+<div class="block"><pre>docker run --rm --gpus all --entrypoint nvidia-smi <span class="image">ghcr.io/vilkam/eclipse-remote-worker:0.1.0</span></pre></div>
+
+<h3>With Tailscale (recommended)</h3>
+<p>The port then exists only on your Tailscale address. Nothing changes on your router or firewall. Install Tailscale, then share this one machine with the studio's Tailscale account from the Tailscale admin page (Machines → Share). A share covers the whole machine, not only the worker's port.</p>
+<div class="block"><pre>docker run -d --name eclipse-worker --restart unless-stopped --gpus all \
+  -p "$(tailscale ip -4):2222:22" -v eclipse-worker:/workspace \
+  -e ECLIPSE_WORKER_KEY="<span class="key">PASTE-THE-STUDIO-KEY</span>" \
+  <span class="image">ghcr.io/vilkam/eclipse-remote-worker:0.1.0</span>
+docker logs eclipse-worker</pre></div>
+
+<h3>With a public address</h3>
+<p>Use this only if the server already has a public address. Allow port 2222 from the studio's address only, in the provider's firewall. Docker's published ports are not filtered by <code>ufw</code>, so a ufw rule alone does not restrict it.</p>
+<div class="block"><pre>docker run -d --name eclipse-worker --restart unless-stopped --gpus all \
+  -p 2222:22 -v eclipse-worker:/workspace \
+  -e ECLIPSE_WORKER_KEY="<span class="key">PASTE-THE-STUDIO-KEY</span>" \
+  <span class="image">ghcr.io/vilkam/eclipse-remote-worker:0.1.0</span>
+docker logs eclipse-worker</pre></div>
+<p>On a machine without a card, leave out <code>--gpus all</code>. It then lends processor cores only.</p>
+
+<h2 id="windows">Windows PC</h2>
+<ol>
+  <li>Install a current NVIDIA driver, Docker Desktop (with the WSL 2 engine, its default) and Tailscale.</li>
+  <li>In the Tailscale admin page, share this one PC with the studio's Tailscale account (Machines → Share). The studio can then reach this PC, and not the rest of your network. A share covers the whole PC, so anything else on it that listens on every address is reachable by the studio too.</li>
+  <li>In PowerShell:</li>
+</ol>
+<div class="block"><pre>$ts = (tailscale ip -4)
+docker run -d --name eclipse-worker --restart unless-stopped --gpus all -p "${ts}:2222:22" -v eclipse-worker:/workspace -e "ECLIPSE_WORKER_KEY=<span class="key">PASTE-THE-STUDIO-KEY</span>" <span class="image">ghcr.io/vilkam/eclipse-remote-worker:0.1.0</span>
+docker logs eclipse-worker</pre></div>
+<p>The worker is then reachable on the PC's Tailscale address only. To confirm, this must fail from another device on your home network: <code>Test-NetConnection YOUR-PC-LAN-ADDRESS -Port 2222</code>.</p>
+<div class="note">If the container does not start after a reboot, Tailscale was not up yet when Docker started. Run <code>docker start eclipse-worker</code>.</div>
+
+<h2 id="back">What to send back</h2>
+<p>The studio needs two things. Both are safe to send in a chat.</p>
+<table>
+  <tr><th>What</th><th>Where you find it</th></tr>
+  <tr><td>Address and port</td><td>RunPod: the direct TCP address. Otherwise your Tailscale address (<code>tailscale ip -4</code>) or public address, with port <code>2222</code>.</td></tr>
+  <tr><td>Host key</td><td>The line <code>eclipse-worker: host key SHA256:…</code> in <code>docker logs eclipse-worker</code> or the pod's log. It lets the studio be sure it reached your worker and nobody in between.</td></tr>
+</table>
+<p>On the studio side, connecting is then two commands:</p>
+<div class="block"><pre>python -m harness.remote add NAME ADDRESS:PORT --fingerprint SHA256:…
+python -m harness.remote enable NAME</pre></div>
+<p>The first one checks the machine and reports its cores, memory, cards, whether the card can encode video, and the speed of the link.</p>
+
+<h2 id="agent">Let an AI agent do it</h2>
+<p>If the machine has an AI coding agent (Claude Code, Codex or similar), paste this to it. The full instructions it will read are in <a href="agent.txt">agent.txt</a>.</p>
+<div class="block"><pre class="wrap" id="agentprompt">Set up an Eclipse render worker on this machine. Read https://vilkam.github.io/eclipse-remote-worker/agent.txt first and follow it exactly, including its list of things not to do. The studio key is:
+
+<span class="key">PASTE-THE-STUDIO-KEY</span>
+
+When you are done, give me the two things to send back to the studio: the address with port, and the host key line.</pre></div>
+
+<h2 id="remove">What it sees, and how to remove it</h2>
+<ul>
+  <li>While a clip renders, its footage and the fonts and style files it needs are on your machine, inside the worker's storage. Whoever controls the machine can see them.</li>
+  <li>A job's own folder is deleted when the job ends. Footage kept to avoid sending it twice is deleted by the worker itself about an hour after its last use. The studio deletes everything it stored when it disconnects.</li>
+  <li>You can stop lending the machine at any time. The studio then renders on its own machine instead.</li>
+</ul>
+<p>To remove the worker and everything it stored:</p>
+<div class="block"><pre>docker rm -f eclipse-worker
+docker volume rm eclipse-worker
+docker rmi <span class="image">ghcr.io/vilkam/eclipse-remote-worker:0.1.0</span></pre></div>
+<p>On RunPod, terminate the pod. If you shared the machine over Tailscale, remove the share in the Tailscale admin page.</p>
+
+<footer>
+  <p>Image: <code class="image">ghcr.io/vilkam/eclipse-remote-worker:0.1.0</code><span id="digest"></span>. Its two source files are in <a href="https://github.com/vIlkAm/eclipse-remote-worker">the repository</a>; the image holds no application code, fonts, models or credentials.</p>
+  <p>Checked so far against a stand-in machine without a card. The RunPod and Windows steps follow those products' own documentation and have not yet been run end to end.</p>
+</footer>
+
+</main>
+<script>
+(function () {
+  var field = document.getElementById('keyfield'), hint = document.getElementById('keyhint');
+  var placeholder = 'PASTE-THE-STUDIO-KEY';
+  function clean(v) { return v.replace(/[\r\n]+/g, ' ').replace(/^[\s"']+|[\s"']+$/g, ''); }
+  function apply() {
+    var key = clean(field.value), ok = /^ssh-ed25519 [A-Za-z0-9+\/=]{60,}( [^"'`$\\]*)?$/.test(key);
+    document.querySelectorAll('.key').forEach(function (n) { n.textContent = ok ? key : placeholder; });
+    hint.className = 'hint' + (key ? (ok ? ' ok' : ' bad') : '');
+    hint.textContent = !key ? 'Not pasted yet. The commands below show a placeholder.'
+      : ok ? 'Key recognised. The commands below now contain it.'
+      : 'This does not look like the studio key. It is one line starting with ssh-ed25519.';
+  }
+  field.addEventListener('input', apply);
+  document.querySelectorAll('.block').forEach(function (block) {
+    var b = document.createElement('button');
+    b.className = 'copy'; b.type = 'button'; b.textContent = 'Copy';
+    b.addEventListener('click', function () {
+      navigator.clipboard.writeText(block.querySelector('pre').textContent).then(function () {
+        b.textContent = 'Copied'; b.classList.add('done');
+        setTimeout(function () { b.textContent = 'Copy'; b.classList.remove('done'); }, 1400);
+      });
+    });
+    block.appendChild(b);
+  });
+})();
+</script>
+</body>
+</html>
