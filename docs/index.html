@@ -93,7 +93,7 @@ footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--line);font-si
   <p><strong>What the key allows:</strong> the studio can copy files into the container and run programs inside it. That is how a render job works. Treat it as lending the studio that container, with your card and as much processor as Docker gives it.</p>
   <p><strong>What it cannot do:</strong> see or change files on your machine outside its own storage folder. The container does have normal internet access, like any other container.</p>
   <p><strong>Which way the connection goes:</strong> the studio calls your machine. The worker starts no connection of its own.</p>
-  <p><strong>What it needs from your line:</strong> a good upload speed. The worker sends back about 5 MB for each second of video it renders, so on a slow upload line it helps little.</p>
+  <p><strong>What it needs from your line:</strong> a good upload speed. For the first render of a clip the worker sends back a large lossless picture, about 100 MB for a 20-second clip in the one case measured. On a slow upload line it helps little.</p>
 </div>
 
 <h2 id="key">1. The key from the studio</h2>
@@ -180,7 +180,8 @@ When you are done, give me the two things to send back to the studio: the addres
 <h2 id="remove">What it sees, and how to remove it</h2>
 <ul>
   <li>While a clip renders, its footage and the fonts and style files it needs are on your machine, inside the worker's storage. Whoever controls the machine can see them.</li>
-  <li>A job's own folder is deleted when the job ends. Footage kept to avoid sending it twice is deleted by the worker itself about an hour after its last use. The studio deletes everything it stored when it disconnects.</li>
+  <li>A job's own folder is deleted when the job ends. Footage kept to avoid sending it twice is deleted by the worker itself about an hour after its last use.</li>
+  <li>Fonts and style files stay until the studio removes the worker from its list, which deletes everything it stored, or until you delete the storage with the commands below.</li>
   <li>You can stop lending the machine at any time. The studio then renders on its own machine instead.</li>
 </ul>
 <p>To remove the worker and everything it stored:</p>
