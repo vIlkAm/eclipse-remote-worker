@@ -116,6 +116,7 @@ footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--line);font-si
     </table>
   </li>
   <li>Set the key when you create the pod. Do not save it into a shared template.</li>
+  <li>If RunPod accepts it, you can name the image by its fingerprint instead, which cannot change: <code style="word-break:break-all">ghcr.io/vilkam/eclipse-remote-worker@sha256:742e30c9675fa06826dde0cbcf308d27d35d2e991619bf1eab70852dc2c56e19</code>.</li>
   <li>When the pod runs, open its <strong>Logs</strong> and find the line <code>eclipse-worker: host key SHA256:…</code>.</li>
   <li>Open <strong>Connect</strong> and read the address under <strong>Direct TCP ports</strong>, the one that leads to port 22. It looks like <code>203.0.113.7:41822</code>.</li>
   <li><a href="#back">Send both to the studio.</a></li>
@@ -124,14 +125,14 @@ footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--line);font-si
 
 <h2 id="linux">Linux server</h2>
 <p>You need Docker and, for a card, the NVIDIA driver with the NVIDIA container toolkit. This checks that Docker can see the card:</p>
-<div class="block"><pre>docker run --rm --gpus all --entrypoint nvidia-smi <span class="image">ghcr.io/vilkam/eclipse-remote-worker:0.1.0</span></pre></div>
+<div class="block"><pre>docker run --rm --gpus all --entrypoint nvidia-smi <span class="image">ghcr.io/vilkam/eclipse-remote-worker@sha256:742e30c9675fa06826dde0cbcf308d27d35d2e991619bf1eab70852dc2c56e19</span></pre></div>
 
 <h3>With Tailscale (recommended)</h3>
 <p>The port then exists only on your Tailscale address. Nothing changes on your router or firewall. Install Tailscale, then share this one machine with the studio's Tailscale account from the Tailscale admin page (Machines → Share). A share covers the whole machine, not only the worker's port.</p>
 <div class="block"><pre>docker run -d --name eclipse-worker --restart unless-stopped --gpus all \
   -p "$(tailscale ip -4):2222:22" -v eclipse-worker:/workspace \
   -e ECLIPSE_WORKER_KEY="<span class="key">PASTE-THE-STUDIO-KEY</span>" \
-  <span class="image">ghcr.io/vilkam/eclipse-remote-worker:0.1.0</span>
+  <span class="image">ghcr.io/vilkam/eclipse-remote-worker@sha256:742e30c9675fa06826dde0cbcf308d27d35d2e991619bf1eab70852dc2c56e19</span>
 docker logs eclipse-worker</pre></div>
 
 <h3>With a public address</h3>
@@ -139,7 +140,7 @@ docker logs eclipse-worker</pre></div>
 <div class="block"><pre>docker run -d --name eclipse-worker --restart unless-stopped --gpus all \
   -p 2222:22 -v eclipse-worker:/workspace \
   -e ECLIPSE_WORKER_KEY="<span class="key">PASTE-THE-STUDIO-KEY</span>" \
-  <span class="image">ghcr.io/vilkam/eclipse-remote-worker:0.1.0</span>
+  <span class="image">ghcr.io/vilkam/eclipse-remote-worker@sha256:742e30c9675fa06826dde0cbcf308d27d35d2e991619bf1eab70852dc2c56e19</span>
 docker logs eclipse-worker</pre></div>
 <p>On a machine without a card, leave out <code>--gpus all</code>. It then lends processor cores only.</p>
 
@@ -150,7 +151,7 @@ docker logs eclipse-worker</pre></div>
   <li>In PowerShell:</li>
 </ol>
 <div class="block"><pre>$ts = (tailscale ip -4)
-docker run -d --name eclipse-worker --restart unless-stopped --gpus all -p "${ts}:2222:22" -v eclipse-worker:/workspace -e "ECLIPSE_WORKER_KEY=<span class="key">PASTE-THE-STUDIO-KEY</span>" <span class="image">ghcr.io/vilkam/eclipse-remote-worker:0.1.0</span>
+docker run -d --name eclipse-worker --restart unless-stopped --gpus all -p "${ts}:2222:22" -v eclipse-worker:/workspace -e "ECLIPSE_WORKER_KEY=<span class="key">PASTE-THE-STUDIO-KEY</span>" <span class="image">ghcr.io/vilkam/eclipse-remote-worker@sha256:742e30c9675fa06826dde0cbcf308d27d35d2e991619bf1eab70852dc2c56e19</span>
 docker logs eclipse-worker</pre></div>
 <p>The worker is then reachable on the PC's Tailscale address only. To confirm, this must fail from another device on your home network: <code>Test-NetConnection YOUR-PC-LAN-ADDRESS -Port 2222</code>.</p>
 <div class="note">If the container does not start after a reboot, Tailscale was not up yet when Docker started. Run <code>docker start eclipse-worker</code>.</div>
@@ -184,12 +185,12 @@ When you are done, give me the two things to send back to the studio: the addres
 <p>To remove the worker and everything it stored:</p>
 <div class="block"><pre>docker rm -f eclipse-worker
 docker volume rm eclipse-worker
-docker rmi <span class="image">ghcr.io/vilkam/eclipse-remote-worker:0.1.0</span></pre></div>
+docker rmi <span class="image">ghcr.io/vilkam/eclipse-remote-worker@sha256:742e30c9675fa06826dde0cbcf308d27d35d2e991619bf1eab70852dc2c56e19</span></pre></div>
 <p>On RunPod, terminate the pod. If you shared the machine over Tailscale, remove the share in the Tailscale admin page.</p>
 
 <footer>
-  <p>Image: <code class="image">ghcr.io/vilkam/eclipse-remote-worker:0.1.0</code><span id="digest"></span>. Its two source files are in <a href="https://github.com/vIlkAm/eclipse-remote-worker">the repository</a>; the image holds no application code, fonts, models or credentials.</p>
-  <p>Checked so far against a stand-in machine without a card. The RunPod and Windows steps follow those products' own documentation and have not yet been run end to end.</p>
+  <p>Image: <code>ghcr.io/vilkam/eclipse-remote-worker:0.1.0</code>, which is <code style="word-break:break-all">sha256:742e30c9675fa06826dde0cbcf308d27d35d2e991619bf1eab70852dc2c56e19</code>. The commands above name it by that fingerprint, so you get exactly the image that was checked. Its two source files are in <a href="https://github.com/vIlkAm/eclipse-remote-worker">the repository</a>; the image holds no application code, fonts, models or credentials.</p>
+  <p>This published image was checked on a stand-in machine without a card: it gave the same picture, frame for frame, as the studio's own renderer. The RunPod and Windows steps follow those products' own documentation and have not yet been run end to end.</p>
 </footer>
 
 </main>

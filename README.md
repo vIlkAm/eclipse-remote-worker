@@ -6,6 +6,7 @@ studio for rendering video.
 - **Setup page:** https://vilkam.github.io/eclipse-remote-worker/
 - **Instructions for an AI agent on the machine:** [docs/agent.txt](docs/agent.txt)
 - **Image:** `ghcr.io/vilkam/eclipse-remote-worker:0.1.0`
+  (`sha256:742e30c9675fa06826dde0cbcf308d27d35d2e991619bf1eab70852dc2c56e19`)
 
 ## What is in the image
 

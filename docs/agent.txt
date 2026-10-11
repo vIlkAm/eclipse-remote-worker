@@ -11,7 +11,8 @@ with "ssh-ed25519 ". It is a public key and is safe to show. If you do not
 have it, ask for it and stop.
 
 IMAGE
-  ghcr.io/vilkam/eclipse-remote-worker:0.1.0
+  ghcr.io/vilkam/eclipse-remote-worker@sha256:742e30c9675fa06826dde0cbcf308d27d35d2e991619bf1eab70852dc2c56e19
+  This is version 0.1.0, named by its fingerprint so it cannot change.
   Public, no sign-in needed. Source: https://github.com/vIlkAm/eclipse-remote-worker
 
 WHAT THE CONTAINER IS
@@ -40,7 +41,7 @@ STEP 1. CHECK WHAT IS THERE
   Windows: Docker Desktop must use the WSL 2 engine. Run commands in PowerShell.
 
 STEP 2. CHECK DOCKER CAN SEE THE CARD (skip without a card)
-  docker run --rm --gpus all --entrypoint nvidia-smi ghcr.io/vilkam/eclipse-remote-worker:0.1.0
+  docker run --rm --gpus all --entrypoint nvidia-smi ghcr.io/vilkam/eclipse-remote-worker@sha256:742e30c9675fa06826dde0cbcf308d27d35d2e991619bf1eab70852dc2c56e19
   If this fails on Linux, the NVIDIA container toolkit is missing. Tell the
   owner. If they prefer, continue without "--gpus all": the machine then
   lends processor cores only.
@@ -60,10 +61,10 @@ STEP 4. START THE WORKER
     docker run -d --name eclipse-worker --restart unless-stopped --gpus all \
       -p "BIND:2222:22" -v eclipse-worker:/workspace \
       -e ECLIPSE_WORKER_KEY="THE STUDIO KEY LINE" \
-      ghcr.io/vilkam/eclipse-remote-worker:0.1.0
+      ghcr.io/vilkam/eclipse-remote-worker@sha256:742e30c9675fa06826dde0cbcf308d27d35d2e991619bf1eab70852dc2c56e19
 
   Windows PowerShell (one line):
-    docker run -d --name eclipse-worker --restart unless-stopped --gpus all -p "BIND:2222:22" -v eclipse-worker:/workspace -e "ECLIPSE_WORKER_KEY=THE STUDIO KEY LINE" ghcr.io/vilkam/eclipse-remote-worker:0.1.0
+    docker run -d --name eclipse-worker --restart unless-stopped --gpus all -p "BIND:2222:22" -v eclipse-worker:/workspace -e "ECLIPSE_WORKER_KEY=THE STUDIO KEY LINE" ghcr.io/vilkam/eclipse-remote-worker@sha256:742e30c9675fa06826dde0cbcf308d27d35d2e991619bf1eab70852dc2c56e19
 
   Replace BIND and the key. Leave out "--gpus all" if there is no card.
   If a container named eclipse-worker already exists, ask the owner before
@@ -93,6 +94,7 @@ RUNPOD INSTEAD OF A MACHINE YOU ARE ON
   A RunPod pod is itself the container, so there is no docker command.
   Create a GPU pod with:
     image                 ghcr.io/vilkam/eclipse-remote-worker:0.1.0
+                          (the same image as the fingerprint above)
     exposed TCP ports     22            (TCP, not HTTP)
     volume mount path     /workspace    (20 GB)
     environment variable  ECLIPSE_WORKER_KEY = the studio key line
@@ -106,6 +108,6 @@ RUNPOD INSTEAD OF A MACHINE YOU ARE ON
 REMOVING IT
   docker rm -f eclipse-worker
   docker volume rm eclipse-worker
-  docker rmi ghcr.io/vilkam/eclipse-remote-worker:0.1.0
+  docker rmi ghcr.io/vilkam/eclipse-remote-worker@sha256:742e30c9675fa06826dde0cbcf308d27d35d2e991619bf1eab70852dc2c56e19
   RunPod: terminate the pod. A stopped pod keeps its storage.
   Tailscale: the owner removes the share in the Tailscale admin page.
